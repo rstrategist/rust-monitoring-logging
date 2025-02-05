@@ -1,13 +1,13 @@
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-use psutil::memory;
-use redactr::load_rule_configs;
+// Import necessary crates and modules
+use actix_web::{web, App, HttpResponse, HttpServer, Responder}; // Actix Web framework for building web apps
+use actix_web_prom::PrometheusMetricsBuilder; // Lib for Prometheus metrics integration
+use psutil::memory; // Lib for system information like memory usage
+use redactr::load_rule_configs; // Custom module for loading redaction rules
 use regex::Regex;
 use serde::Serialize;
-use std::time::{SystemTime, UNIX_EPOCH};
-use actix_web_prom::PrometheusMetricsBuilder;
+use std::time::{SystemTime, UNIX_EPOCH}; // For time handling
 
-
-// Health endpoint JSON
+// Define the structure for health check JSON response endpoint
 #[derive(Serialize)]
 struct HealthCheck {
     name: String,
@@ -40,11 +40,11 @@ async fn health() -> impl Responder {
     let memory = memory_usage.percent();
     checks.push(HealthCheck {
         name: "Memory usage".to_string(),
-        status: format!("{} %", memory.to_string()),
+        status: format!("{} %", memory),
     });
 
     // Check disk usage
-    let disk_usage = psutil::disk::disk_usage("/").unwrap();
+    let disk_usage = disk::disk_usage("/").unwrap();
     checks.push(HealthCheck {
         name: "Disk usage".to_string(),
         status: format!("{} bytes", disk_usage.total()),
@@ -53,7 +53,7 @@ async fn health() -> impl Responder {
     // Return the checks as a JSON object
     let health_status = HealthStatus {
         uptime,
-        memory_usage: memory_usage.percent(),
+        memory_usage: memory,
         disk_usage: disk_usage.total(),
         checks,
     };
@@ -108,11 +108,11 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
 
     HttpServer::new(move || {
-        App::new()      
-        .wrap(prometheus.clone())
-        .service(web::resource("/").route(web::get().to(index)))
-        .service(web::resource("/redact").route(web::post().to(redact)))
-        .service(web::resource("/health").route(web::get().to(health)))
+        App::new()
+            .wrap(prometheus.clone())
+            .service(web::resource("/").route(web::get().to(index)))
+            .service(web::resource("/redact").route(web::post().to(redact)))
+            .service(web::resource("/health").route(web::get().to(health)))
     })
     .bind("127.0.0.1:8080")?
     .run()
