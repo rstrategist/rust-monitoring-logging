@@ -1,3 +1,11 @@
+/*
+Project: Rust Monitoring and Logging Microservice
+
+Description: This microservice is built with Rust and Actix Web.
+It provides endpoints for redacting personal identifiable information (PII) from text,
+as well as monitoring the service with Prometheus, and checking the health of the service.
+*/
+
 // Import necessary crates and modules
 use actix_web::{web, App, HttpResponse, HttpServer, Responder}; // Actix Web framework for building web apps
 use actix_web_prom::PrometheusMetricsBuilder; // Lib for Prometheus metrics integration
@@ -40,11 +48,11 @@ async fn health() -> impl Responder {
     let memory = memory_usage.percent();
     checks.push(HealthCheck {
         name: "Memory usage".to_string(),
-        status: format!("{} %", memory),
+        status: format!("{} %", memory.to_string()),
     });
 
     // Check disk usage
-    let disk_usage = disk::disk_usage("/").unwrap();
+    let disk_usage = psutil::disk::disk_usage("/").unwrap();
     checks.push(HealthCheck {
         name: "Disk usage".to_string(),
         status: format!("{} bytes", disk_usage.total()),
@@ -53,7 +61,7 @@ async fn health() -> impl Responder {
     // Return the checks as a JSON object
     let health_status = HealthStatus {
         uptime,
-        memory_usage: memory,
+        memory_usage: memory_usage.percent(),
         disk_usage: disk_usage.total(),
         checks,
     };
