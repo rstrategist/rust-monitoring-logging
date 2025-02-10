@@ -1,6 +1,6 @@
 use serde::Deserialize;
 use std::collections::HashMap;
-use tracing::info;
+use tracing::info; // To log the redacted text rather than using println
 
 // load the regex-fules.json file to provide configs
 const JSON: &str = include_str!("../regex-rules.json");
@@ -33,7 +33,7 @@ impl Rule {
     }
 
     pub fn on_match(&mut self, matched_text: &str) -> String {
-        info!("Redacting: {}", matched_text);
+        info!("Redacting: {}", matched_text); // Log the redacted text
         let redacted_match = self
             .mapping
             .entry(matched_text.to_string())
@@ -41,7 +41,7 @@ impl Rule {
                 self.count += 1;
                 format!("{}{}", self.placeholder, self.count)
             });
-        info!("Redacted result: {}", redacted_match);
+        info!("Redacted result: {}", redacted_match); // Log the redacted text
         redacted_match.clone()
     }
 }

@@ -1,13 +1,12 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web_prom::PrometheusMetricsBuilder;
 use psutil::memory;
 use redactr::load_rule_configs;
 use regex::Regex;
 use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
-use actix_web_prom::PrometheusMetricsBuilder;
-use tracing::{info, debug, Level};
+use tracing::{debug, info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
-
 
 // Health endpoint JSON
 #[derive(Serialize)]
@@ -111,9 +110,10 @@ async fn main() -> std::io::Result<()> {
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::DEBUG)
         .finish();
-    tracing::subscriber::set_global_default(subscriber).expect("Unable to set global default"); 
+    tracing::subscriber::set_global_default(subscriber).expect("Unable to set global default");
     info!("Starting the redactr service");
     debug!("Binding to address: {}", bind_address);
+    warn!("This is a warning message");
 
     let prometheus = PrometheusMetricsBuilder::new("redactr")
         .endpoint("/metrics")
@@ -121,11 +121,11 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
 
     HttpServer::new(move || {
-        App::new()      
-        .wrap(prometheus.clone())
-        .service(web::resource("/").route(web::get().to(index)))
-        .service(web::resource("/redact").route(web::post().to(redact)))
-        .service(web::resource("/health").route(web::get().to(health)))
+        App::new()
+            .wrap(prometheus.clone())
+            .service(web::resource("/").route(web::get().to(index)))
+            .service(web::resource("/redact").route(web::post().to(redact)))
+            .service(web::resource("/health").route(web::get().to(health)))
     })
     .bind(bind_address)?
     .run()

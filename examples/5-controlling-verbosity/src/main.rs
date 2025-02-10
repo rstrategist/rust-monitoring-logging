@@ -1,13 +1,12 @@
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web_prom::PrometheusMetricsBuilder;
 use psutil::memory;
 use redactr::load_rule_configs;
 use regex::Regex;
 use serde::Serialize;
 use std::time::{SystemTime, UNIX_EPOCH};
-use actix_web_prom::PrometheusMetricsBuilder;
-use tracing::{info, debug, Level};
+use tracing::{debug, info, Level};
 use tracing_subscriber::FmtSubscriber;
-
 
 // Health endpoint JSON
 #[derive(Serialize)]
@@ -117,12 +116,11 @@ async fn main() -> std::io::Result<()> {
     let port = "8080";
     let bind_address = format!("{}:{}", address, port);
     // Initialize logging
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(max_level)
-        .finish();
-    tracing::subscriber::set_global_default(subscriber).expect("Unable to set global default"); 
+    let subscriber = FmtSubscriber::builder().with_max_level(max_level).finish();
+    tracing::subscriber::set_global_default(subscriber).expect("Unable to set global default");
     info!("Starting the redactr service");
     debug!("Binding to address: {}", bind_address);
+    info!(address = %address, port = %port, "Listening for requests");
 
     let prometheus = PrometheusMetricsBuilder::new("redactr")
         .endpoint("/metrics")
@@ -130,11 +128,11 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
 
     HttpServer::new(move || {
-        App::new()      
-        .wrap(prometheus.clone())
-        .service(web::resource("/").route(web::get().to(index)))
-        .service(web::resource("/redact").route(web::post().to(redact)))
-        .service(web::resource("/health").route(web::get().to(health)))
+        App::new()
+            .wrap(prometheus.clone())
+            .service(web::resource("/").route(web::get().to(index)))
+            .service(web::resource("/redact").route(web::post().to(redact)))
+            .service(web::resource("/health").route(web::get().to(health)))
     })
     .bind(bind_address)?
     .run()

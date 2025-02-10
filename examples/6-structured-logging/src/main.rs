@@ -89,12 +89,14 @@ async fn redact(input_text: web::Json<String>) -> impl Responder {
 
     // Apply the rules sequentially
     let mut redacted_text = input_text.to_string();
+    debug!("Redacting text: {}", redacted_text);
     for rule in &mut rules {
         let regex = Regex::new(rule.pattern.as_str()).unwrap();
         for captures in regex.captures_iter(&input_text) {
             let matched_text = captures.get(0).unwrap().as_str();
             let redacted_match = rule.on_match(matched_text);
             redacted_text = redacted_text.replace(matched_text, &redacted_match);
+            info!("Redacted text: {}", redacted_text);
         }
     }
 
